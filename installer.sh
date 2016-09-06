@@ -17,6 +17,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+VERSION=1.2
+
 # force early
 sudo echo -n
 
@@ -24,6 +26,17 @@ EXIT_CODE=0
 
 # we use `which` since the defaut version installed by docker engine does not contain the create command
 DOCKER_COMPOSE=`which docker-compose`
+if [ "" == "$DOCKER_COMPOSE" ]; then
+    echo "docker-compose not installed!";
+    echo "    Please refer to https://docs.docker.com/compose/install/";
+    exit 4;
+fi
+
+# This will avoid anyoing message 'WARNING: The DEPLOYMENT variable is not set. Defaulting to a blank string.'
+# but it won’t help if the <your-app>.jar is not found!
+if [ "" == "$DEPLOYMENT" ]; then
+    export DEPLOYMENT=`pwd`
+fi
 
 INSTALLER=$(readlink -f "$0")
 APP_PATH=$(dirname $INSTALLER)
@@ -109,7 +122,7 @@ EXIT_CODE=0;
 
 case "$1" in
     status)
-        `which docker-compose` ps
+        $DOCKER_COMPOSE ps
         EXIT_CODE=$?
     ;;
     
@@ -119,8 +132,8 @@ case "$1" in
     ;;
     
     startnow)
-        `which docker-compose` up -d
-        `which docker-compose` ps
+        $DOCKER_COMPOSE up -d
+        $DOCKER_COMPOSE ps
         EXIT_CODE=$?
     ;;
     
@@ -133,8 +146,8 @@ case "$1" in
     ;;
     
     stopnow)
-        `which docker-compose` stop
-        `which docker-compose` ps
+        $DOCKER_COMPOSE stop
+        $DOCKER_COMPOSE ps
         EXIT_CODE=$?
     ;;
     
@@ -144,9 +157,9 @@ case "$1" in
     ;;
     
     restartnow)
-        `which docker-compose` stop
-        `which docker-compose` up -d
-        `which docker-compose` ps
+        $DOCKER_COMPOSE stop
+        $DOCKER_COMPOSE up -d
+        $DOCKER_COMPOSE ps
         EXIT_CODE=$?
     ;;
     
@@ -173,7 +186,7 @@ EOF
     ln -s $SERVICE_SCRIPT .
     
     cd $APP_PATH
-    `which docker-compose` create
+    $DOCKER_COMPOSE create
     
     cd /etc/init.d/
     sudo update-rc.d $SERVICE_NAME defaults
@@ -186,10 +199,10 @@ function do_remove() {
     sudo service $SERVICE_NAME stop;
     
     if [ -f docker-compose.yml ]; then
-        `which docker-compose` stop;
+        $DOCKER_COMPOSE stop;
         export REMOVING=1;
         do_backup;
-        `which docker-compose` rm -f --all;
+        $DOCKER_COMPOSE rm -f;
     fi
     
     sudo rm -f $SERVICE_NAME;
@@ -203,11 +216,11 @@ function do_remove() {
 }
 
 function do_backup() {
-    local running=$(`which docker-compose` ps | grep -c ' Up ');
+    local running=$($DOCKER_COMPOSE ps | grep -c ' Up ');
     
-    [ $running != 0 ] && `which docker-compose` stop;
+    [ $running != 0 ] && $DOCKER_COMPOSE stop;
     
-    local CONTAINERS=$(`which docker-compose` ps -q)
+    local CONTAINERS=$($DOCKER_COMPOSE ps -q)
     [ "" != "$CONTAINERS" ] && mkdir -p logs_bak;
     
     for C in $CONTAINERS ; do 
@@ -224,7 +237,7 @@ function do_backup() {
     fi
     
     if [ $running != 0 ]; then
-        [[ $REMOVING != 1 && $UPDATING != 1 ]] && `which docker-compose` start;
+        [[ $REMOVING != 1 && $UPDATING != 1 ]] && $DOCKER_COMPOSE start;
     fi
     
     EXIT_CODE=$?;
@@ -238,15 +251,15 @@ function do_update() {
     fi
     
     export UPDATING=1;
-    local running=$(`which docker-compose` ps | grep -c ' Up ');
+    local running=$($DOCKER_COMPOSE ps | grep -c ' Up ');
     
     do_backup;
     
-    `which docker-compose` pull;
+    $DOCKER_COMPOSE pull;
     EXIT_CODE=$?;
     
     if [ $running != 0 ]; then 
-        `which docker-compose` up -d;
+        $DOCKER_COMPOSE up -d;
         EXIT_CODE=$?;
     fi
 }
@@ -269,6 +282,7 @@ case "$1" in
     ;;
     
     *)
+        echo "LSB Installer for Docker Compose Services, version $VERSION"
         echo "Usage:"
         echo "    \$ $0 {install|remove} # the system service"
         echo "    \$ $0 {update}  # maintain the service"
