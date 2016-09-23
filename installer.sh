@@ -17,7 +17,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-VERSION=1.2
+VERSION=1.2.1
 
 # force early
 sudo echo -n
@@ -33,9 +33,9 @@ if [ "" == "$DOCKER_COMPOSE" ]; then
 fi
 
 # This will avoid anyoing message 'WARNING: The DEPLOYMENT variable is not set. Defaulting to a blank string.'
-# but it won’t help if the <your-app>.jar is not found!
+# but it won’t help if the <your-app>.jar is not found by your docker-compose.yml!
 if [ "" == "$DEPLOYMENT" ]; then
-    export DEPLOYMENT=`pwd`
+    export DEPLOYMENT='.'
 fi
 
 INSTALLER=$(readlink -f "$0")
@@ -284,8 +284,8 @@ case "$1" in
     *)
         echo "LSB Installer for Docker Compose Services, version $VERSION"
         echo "Usage:"
-        echo "    \$ $0 {install|remove} # the system service"
-        echo "    \$ $0 {update}  # maintain the service"
+        echo "    $0 {install|remove} # the system service"
+        echo "    $0 update           # maintain the service"
         echo
         echo "Note:"
         echo "    'remove' will keep all data external to the container(s) and all logs."
