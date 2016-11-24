@@ -228,7 +228,7 @@ function do_backup() {
         cname=`basename $cname`
         local c="$APP_PATH/logs_bak/$TIMESTAMP""_$cname.log.gz"
         echo "    Logs backup: $c"
-        sudo docker logs $C | gzip -9 &> $c
+        sudo docker logs $C |& gzip -9 >& $c
     done
     
     if [ -d logs_bak ]; then
